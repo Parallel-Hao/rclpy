@@ -23,6 +23,12 @@ class Publisher:
         self.topic = topic
         self.qos_profile = qos_profile
         self.node_handle = node_handle
+        if hasattr(self.msg_type, '_use_proto_'):
+            self._use_proto_ = True
 
     def publish(self, msg):
-        _rclpy.rclpy_publish(self.publisher_handle, msg)
+        if self._use_proto_:
+            raw_msg = msg.SerializeToString()
+            _rclpy.rclpy_publish_serialized(self.publisher_handle, raw_msg)
+        else:
+            _rclpy.rclpy_publish(self.publisher_handle, msg)

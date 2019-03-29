@@ -29,3 +29,6 @@ class Subscription:
         self._executor_event = False
         self.qos_profile = qos_profile
         self.raw = raw
+        self._use_proto_ = False
+        if hasattr(self.msg_type, '_use_proto_'):
+            self._use_proto_ = True

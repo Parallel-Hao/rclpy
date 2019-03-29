@@ -247,7 +247,12 @@ class Executor:
         await await_or_execute(tmr.callback)
 
     def _take_subscription(self, sub):
-        msg = _rclpy.rclpy_take(sub.subscription_handle, sub.msg_type, sub.raw)
+        if sub._use_proto_:
+            raw_msg = _rclpy.rclpy_take_serialized(sub.subsription_handle, sub.msg_type)
+            msg = sub.msg_type()
+            msg.ParseFromString(raw_msg)
+        else:
+            msg = _rclpy.rclpy_take(sub.subscription_handle, sub.msg_type, sub.raw)
         return msg
 
     async def _execute_subscription(self, sub, msg):

@@ -1193,6 +1193,47 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
   return PyCapsule_New(publisher, "rcl_publisher_t", NULL);
 }
 
+/// Publish a Serialized Message
+/**
+ * Raises ValueError if pypublisher is not a publisher capsule
+ * Raises RuntimeError if the message cannot be published
+ *
+ * \param[in] pypublisher Capsule pointing to the publisher
+ * \param[in] pymsg message to send
+ * \return NULL
+ */
+static PyObject *
+rclpy_publish_serialized(PyObject * Py_UNUSED(self), PyObject * args)
+{
+    PyObject * pypublisher;
+    PyObject * msg;
+
+    if (!PyArg_ParseTuple(args, "OO", &pypublisher, &msg)) {
+        return NULL;
+    }
+
+    rcl_publisher_t * publisher = (rcl_publisher_t *)PyCapsule_GetPointer(
+            pypublisher, "rcl_publisher_t");
+    if (!publisher) {
+        return NULL;
+    }
+
+    rcl_serialized_message_t serialized_msg = {0};
+    serialized_msg.buffer = PyBytes_AsString(msg);
+    serialized_msg.buffer_length = PyBytes_Size(msg);
+    serialized_msg.buffer_capacity = PyBytes_Size(msg);
+
+    rcl_ret_t ret = rcl_publish_serialized_message(publisher, &serialized_msg);
+    if (ret != RCL_RET_OK) {
+        PyErr_Format(PyExc_RuntimeError,
+                "Failed to publish serialized msg: %s", rcl_get_error_string().str);
+        rcl_reset_error();
+        return NULL;
+    }
+
+    Py_RETURN_NONE;
+}
+
 /// Publish a message
 /**
  * Raises ValueError if pypublisher is not a publisher capsule
@@ -2549,6 +2590,32 @@ rclpy_take_raw(rcl_subscription_t * subscription)
     return NULL;
   }
   return python_bytes;
+}
+
+/// Take a Serialized Message from a given subscription
+/**
+ * \param[in] pysubscription Capsule pointing to the subscription to process the message
+ * \param[in] pymsg_type Instance of the message type to take
+ * \return Python message with all fields populated with received message
+ */
+static PyObject *
+rclpy_take_serialized(PyObject * Py_UNUSED(self), PyObject * args)
+{
+    PyObject * pysubscription;
+    PyObject * pymsg_type;
+
+    if (!PyArg_ParseTuple(args, "OO", &pysubscription, &pymsg_type)) {
+        return NULL;
+    }
+    if (!PyCapsule_CheckExact(pysubscription)) {
+        PyErr_Format(PyExc_TypeError, "Argument pysubscription is not a valid PyCapsule");
+        return NULL;
+    }
+
+    rcl_subscription_t * subscription =
+        (rcl_subscription_t *)PyCapsule_GetPointer(pysubscription, "rcl_subscription_t");
+
+    return rclpy_take_raw(subscription);
 }
 
 /// Take a message from a given subscription
@@ -4321,6 +4388,10 @@ static PyMethodDef rclpy_methods[] = {
   },
 
   {
+    "rclpy_publish_serialized", rclpy_publish_serialized, METH_VARARGS,
+    "Publish a Serialized Message."
+  },
+  {
     "rclpy_publish", rclpy_publish, METH_VARARGS,
     "Publish a message."
   },
@@ -4421,6 +4492,11 @@ static PyMethodDef rclpy_methods[] = {
   {
     "rclpy_wait", rclpy_wait, METH_VARARGS,
     "rclpy_wait."
+  },
+
+  {
+    "rclpy_take_serialized", rclpy_take_serialized, METH_VARARGS,
+    "rclpy_take_serialized."
   },
 
   {

@@ -16,6 +16,9 @@ from rclpy.exceptions import NoTypeSupportImportedException
 
 
 def check_for_type_support(msg_type):
+    if hasattr(msg_type, '_use_proto_'):
+        return
+
     try:
         ts = msg_type.__class__._TYPE_SUPPORT
     except AttributeError as e:
