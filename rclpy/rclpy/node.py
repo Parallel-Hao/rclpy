@@ -475,4 +475,7 @@ class Node:
         return self._count_publishers_or_subscribers(topic_name, _rclpy.rclpy_count_subscribers)
 
     def __del__(self):
-        self.destroy_node()
+        try:
+            self.destroy_node()
+        except:
+            pass

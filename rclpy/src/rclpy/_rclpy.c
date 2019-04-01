@@ -2156,6 +2156,11 @@ rclpy_destroy_entity(PyObject * Py_UNUSED(self), PyObject * args)
   } else if (PyCapsule_IsValid(pyentity, "rcl_guard_condition_t")) {
     rcl_guard_condition_t * guard_condition = (rcl_guard_condition_t *)PyCapsule_GetPointer(
       pyentity, "rcl_guard_condition_t");
+
+    if (guard_condition == g_sigint_gc_handle) {
+      g_sigint_gc_handle = NULL;
+    }
+
     ret = rcl_guard_condition_fini(guard_condition);
     PyMem_Free(guard_condition);
   } else {
