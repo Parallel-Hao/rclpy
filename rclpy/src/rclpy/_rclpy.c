@@ -31,6 +31,8 @@
 
 #include <signal.h>
 
+#include "c_time.hpp"
+
 static rcl_guard_condition_t * g_sigint_gc_handle;
 
 #ifdef _WIN32
@@ -1183,6 +1185,7 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
   assert(destroy_ros_message != NULL &&
     "unable to retrieve destroy_ros_message function, type_support mustn't have been imported");
 
+size_t t1 = c_time();
   convert_from_py_signature * convert_from_py = get_capsule_pointer(
     pymetaclass, "_CONVERT_FROM_PY");
   assert(convert_from_py != NULL &&
@@ -1200,6 +1203,8 @@ rclpy_publish(PyObject * Py_UNUSED(self), PyObject * args)
     destroy_ros_message(raw_ros_message);
     return NULL;
   }
+size_t t2 = c_time();
+print_t(t1, t2, "Convert");
 
   rcl_ret_t ret = rcl_publish(publisher, raw_ros_message);
   destroy_ros_message(raw_ros_message);
@@ -2568,10 +2573,14 @@ rclpy_take(PyObject * Py_UNUSED(self), PyObject * args)
   }
 
   if (ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
+size_t t1 = c_time();
     convert_to_py_signature * convert_to_py = get_capsule_pointer(pymetaclass, "_CONVERT_TO_PY");
     Py_DECREF(pymetaclass);
 
     PyObject * pytaken_msg = convert_to_py(taken_msg);
+size_t t2 = c_time();
+print_t(t1, t2, "Deconvert");
+
     destroy_ros_message(taken_msg);
     if (!pytaken_msg) {
       // the function has set the Python error
