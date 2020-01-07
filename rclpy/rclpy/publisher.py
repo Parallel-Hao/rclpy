@@ -14,6 +14,7 @@
 
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 
+import time
 
 class Publisher:
 
@@ -34,7 +35,11 @@ class Publisher:
             _rclpy.rclpy_publish_serialized(self.publisher_handle, msg)
             return
         if self._use_proto_:
+            t0 = time.time()
             raw = msg.SerializeToString()
+            t1 = time.time()
+            lat = (t1 - t0) * 1e3
+            print("Serialize: " + str(lat) + ' ms')
             _rclpy.rclpy_publish_serialized(self.publisher_handle, raw)
         else:
             _rclpy.rclpy_publish(self.publisher_handle, msg)

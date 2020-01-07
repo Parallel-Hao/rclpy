@@ -24,6 +24,8 @@ from rclpy.timer import WallTimer
 from rclpy.utilities import ok
 from rclpy.utilities import timeout_sec_to_nsec
 
+import time 
+
 # TODO(wjwwood): make _rclpy_wait(...) thread-safe
 # Executor.spin_once() ends up calling _rclpy_wait(...), which right now is
 # not thread-safe, no matter if different wait sets are used or not.
@@ -245,7 +247,11 @@ class Executor:
         if sub._use_proto_:
             raw = _rclpy.rclpy_take_serialized(sub.subscription_handle, sub.msg_type)
             msg = sub.msg_type()
+            t0 = time.time()
             msg.ParseFromString(raw)
+            t1 = time.time()
+            lat = (t1 - t0) * 1e3
+            print("Deserialize: " + str(lat) + ' ms')
         else:
             msg = _rclpy.rclpy_take(sub.subscription_handle, sub.msg_type)
         return msg
