@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 
+rclpy/install/*
 # C extensions
 *.so
 
