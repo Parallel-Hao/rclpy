@@ -1312,6 +1312,11 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
 
+  int use_proto = PyObject_HasAttrString(pymsg_type, "_use_proto_");
+  if ( use_proto ) {
+    pymetaclass = pymsg_type;
+  }
+
   PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
   Py_DECREF(pymetaclass);
   if (!pyts) {
@@ -1363,6 +1368,47 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
     return NULL;
   }
   return PyCapsule_New(pub, "rclpy_publisher_t", _rclpy_destroy_publisher);
+}
+
+/// Publish a Serialized Message
+/**
+ * Raises ValueError if pypublisher is not a publisher capsule
+ * Raises RuntimeError if the message cannot be published
+ *
+ * \param[in] pypublisher Capsule pointing to the publisher
+ * \param[in] pymsg message to send
+ * \return NULL
+ */
+static PyObject *
+rclpy_publish_serialized(PyObject * Py_UNUSED(self), PyObject * args)
+{
+    PyObject * pypublisher;
+    PyObject * msg;
+
+    if (!PyArg_ParseTuple(args, "OO", &pypublisher, &msg)) {
+        return NULL;
+    }
+
+    rclpy_publisher_t * pub = (rclpy_publisher_t *)PyCapsule_GetPointer(
+            pypublisher, "rclpy_publisher_t");
+    if (!pub) {
+        return NULL;
+    }
+
+    rcl_serialized_message_t serialized_msg = {0};
+    serialized_msg.buffer = PyBytes_AsString(msg);
+    serialized_msg.buffer_length = PyBytes_Size(msg);
+    serialized_msg.buffer_capacity = PyBytes_Size(msg);
+
+    rcl_ret_t ret = rcl_publish_serialized_message(&(pub->publisher), &serialized_msg, NULL);
+    if (ret != RCL_RET_OK) {
+        PyErr_Format(PyExc_RuntimeError,
+                "Failed to publish serialized msg: %s", rcl_get_error_string().str);
+        rcl_reset_error();
+        return NULL;
+    }
+
+    Py_RETURN_NONE;
 }
 
 /// Publish a message
@@ -1903,6 +1949,11 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pymetaclass = PyObject_GetAttrString(pymsg_type, "__class__");
   if (!pymetaclass) {
     return NULL;
+  }
+
+  int use_proto = PyObject_HasAttrString(pymsg_type, "_use_proto_");
+  if ( use_proto ) {
+    pymetaclass = pymsg_type;
   }
 
   PyObject * pyts = PyObject_GetAttrString(pymetaclass, "_TYPE_SUPPORT");
@@ -2851,6 +2902,53 @@ rclpy_take_raw(rcl_subscription_t * subscription)
     return NULL;
   }
   return python_bytes;
+}
+
+/// Take a Serialized Message from a given subscription
+/**
+ * \param[in] pysubscription Capsule pointing to the subscription to process the message
+ * \param[in] pymsg_type Instance of the message type to take
+ * \return Python message with all fields populated with received message
+ */
+static PyObject *
+rclpy_take_serialized(PyObject * Py_UNUSED(self), PyObject * args)
+{
+  PyObject * pysubscription;
+  PyObject * pymsg_type;
+
+  if (!PyArg_ParseTuple(args, "OO", &pysubscription, &pymsg_type)) {
+    return NULL;
+  }
+  if (!PyCapsule_CheckExact(pysubscription)) {
+    PyErr_Format(PyExc_TypeError, "Argument pysubscription is not a valid PyCapsule");
+    return NULL;
+  }
+
+  rclpy_subscription_t * sub =
+    (rclpy_subscription_t *)PyCapsule_GetPointer(pysubscription, "rclpy_subscription_t");
+  if (!sub) {
+    return NULL;
+  }
+
+  rcl_serialized_message_t serialized_message;
+  rcl_ret_t ret = rcl_take_serialized_message(&(sub->subscription), &serialized_message, NULL, NULL);
+
+  if (ret != RCL_RET_OK && ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
+    PyErr_Format(PyExc_RuntimeError,
+        "Failed to take from a subscription: %s", rcl_get_error_string().str);
+    rcl_reset_error();
+    return NULL;
+  }
+
+  if (ret != RCL_RET_SUBSCRIPTION_TAKE_FAILED) {
+    PyObject *pytaken_msg;
+    pytaken_msg = PyBytes_FromStringAndSize( (const char*)(serialized_message.buffer), serialized_message.buffer_length);
+    free(serialized_message.buffer);
+    return pytaken_msg;
+  }
+
+  // if take failed, just do nothing
+  Py_RETURN_NONE;
 }
 
 /// Take a message from a given subscription
@@ -4810,6 +4908,10 @@ static PyMethodDef rclpy_methods[] = {
   },
 
   {
+    "rclpy_publish_serialized", rclpy_publish_serialized, METH_VARARGS,
+    "Publish a Serialized Message."
+  },
+  {
     "rclpy_publish", rclpy_publish, METH_VARARGS,
     "Publish a message."
   },
@@ -4916,6 +5018,10 @@ static PyMethodDef rclpy_methods[] = {
     "rclpy_wait."
   },
 
+  {
+    "rclpy_take_serialized", rclpy_take_serialized, METH_VARARGS,
+    "rclpy_take_serialized."
+  },
   {
     "rclpy_take", rclpy_take, METH_VARARGS,
     "rclpy_take."

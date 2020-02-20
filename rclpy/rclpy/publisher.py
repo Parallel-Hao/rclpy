@@ -52,6 +52,9 @@ class Publisher:
         self.msg_type = msg_type
         self.topic = topic
         self.qos_profile = qos_profile
+        self._use_proto_ = False
+        if hasattr(self.msg_type, '_use_proto_'):
+            self._use_proto_ = True
 
         self.event_handlers = event_callbacks.create_event_handlers(
             callback_group, publisher_handle)
@@ -67,7 +70,11 @@ class Publisher:
         if not isinstance(msg, self.msg_type):
             raise TypeError()
         with self.handle as capsule:
-            _rclpy.rclpy_publish(capsule, msg)
+            if self._use_proto_:
+                raw = msg.SerializeToString()
+                _rclpy.rclpy_publish_serialized(capsule, raw)
+            else:
+                _rclpy.rclpy_publish(capsule, msg)
 
     def get_subscription_count(self) -> int:
         """Get the amount of subscribers that this publisher has."""
