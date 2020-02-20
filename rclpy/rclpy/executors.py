@@ -230,8 +230,11 @@ class Executor:
         return True
 
     def __del__(self):
-        if self._sigint_gc is not None:
-            self._sigint_gc.destroy()
+        try:
+            if self._sigint_gc is not None:
+                self._sigint_gc.destroy()
+        except:
+            pass
 
     def add_node(self, node: 'Node') -> bool:
         """

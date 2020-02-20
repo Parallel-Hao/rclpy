@@ -46,10 +46,13 @@ class Future:
         self._set_executor(executor)
 
     def __del__(self):
-        if self._exception is not None and not self._exception_fetched:
-            print(
-                'The following exception was never retrieved: ' + str(self._exception),
-                file=sys.stderr)
+        try:
+            if self._exception is not None and not self._exception_fetched:
+                print(
+                    'The following exception was never retrieved: ' + str(self._exception),
+                    file=sys.stderr)
+        except:
+            pass
 
     def __await__(self):
         # Yield if the task is not finished

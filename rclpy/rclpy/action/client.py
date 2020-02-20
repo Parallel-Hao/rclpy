@@ -592,5 +592,8 @@ class ActionClient(Waitable):
         self._client_handle = None
 
     def __del__(self):
-        """Destroy the underlying action client handle."""
-        self.destroy()
+        try:
+            """Destroy the underlying action client handle."""
+            self.destroy()
+        except:
+            pass

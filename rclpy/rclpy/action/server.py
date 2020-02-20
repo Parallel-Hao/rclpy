@@ -621,5 +621,8 @@ class ActionServer(Waitable):
         self._handle = None
 
     def __del__(self):
-        """Destroy the underlying action server handle."""
-        self.destroy()
+        try:
+            """Destroy the underlying action server handle."""
+            self.destroy()
+        except:
+            pass
