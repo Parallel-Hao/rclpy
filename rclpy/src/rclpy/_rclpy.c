@@ -1974,6 +1974,16 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   if (PyCapsule_IsValid(pyqos_profile, "rmw_qos_profile_t")) {
     void * p = PyCapsule_GetPointer(pyqos_profile, "rmw_qos_profile_t");
     rmw_qos_profile_t * qos_profile = (rmw_qos_profile_t *)p;
+
+    // As Qos durability makes sense only for Pub side in official ROS2,
+    // we use durability in Sub side for whether enable proto path.
+    // Note: The durability meaning must be consisitent with rmw_create_subscription.
+    // default --> 2 (RMW_QOS_POLICY_DURABILITY_VOLATILE)
+    // proto --> 42
+    if (use_proto) {
+        qos_profile->durability = 42;
+    }
+
     subscription_ops.qos = *qos_profile;
     // TODO(jacobperron): It is not obvious why the capsule reference should be destroyed here.
     // Instead, a safer pattern would be to destroy the QoS object with its own destructor.
