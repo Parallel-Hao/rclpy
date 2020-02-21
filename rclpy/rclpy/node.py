@@ -1155,7 +1155,7 @@ class Node:
         try:
             with self.handle as capsule:
                 subscription_capsule = _rclpy.rclpy_create_subscription(
-                    capsule, msg_type, topic, qos_profile.get_c_qos_profile())
+                    capsule, msg_type, topic, qos_profile.get_c_qos_profile(), raw)
         except ValueError:
             failed = True
         if failed:

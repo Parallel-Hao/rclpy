@@ -1931,8 +1931,9 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pymsg_type;
   PyObject * pytopic;
   PyObject * pyqos_profile;
+  int raw = 0;
 
-  if (!PyArg_ParseTuple(args, "OOOO", &pynode, &pymsg_type, &pytopic, &pyqos_profile)) {
+  if (!PyArg_ParseTuple(args, "OOOOp", &pynode, &pymsg_type, &pytopic, &pyqos_profile, &raw)) {
     return NULL;
   }
 
@@ -1980,7 +1981,7 @@ rclpy_create_subscription(PyObject * Py_UNUSED(self), PyObject * args)
     // Note: The durability meaning must be consisitent with rmw_create_subscription.
     // default --> 2 (RMW_QOS_POLICY_DURABILITY_VOLATILE)
     // proto --> 42
-    if (use_proto) {
+    if (use_proto || raw) {
         qos_profile->durability = 42;
     }
 

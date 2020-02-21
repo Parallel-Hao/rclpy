@@ -325,6 +325,9 @@ class Executor:
 
     def _take_subscription(self, sub):
         with sub.handle as capsule:
+            if sub.raw:
+                raw = _rclpy.rclpy_take_serialized(capsule, sub.msg_type);
+                return raw
             if sub._use_proto_:
                 raw_msg = _rclpy.rclpy_take_serialized(capsule, sub.msg_type)
                 msg = sub.msg_type()
