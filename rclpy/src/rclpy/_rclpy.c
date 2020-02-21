@@ -1292,8 +1292,9 @@ rclpy_create_publisher(PyObject * Py_UNUSED(self), PyObject * args)
   PyObject * pymsg_type;
   PyObject * pytopic;
   PyObject * pyqos_profile;
+  int raw = false;
 
-  if (!PyArg_ParseTuple(args, "OOOO", &pynode, &pymsg_type, &pytopic, &pyqos_profile)) {
+  if (!PyArg_ParseTuple(args, "OOOOp", &pynode, &pymsg_type, &pytopic, &pyqos_profile, &raw)) {
     return NULL;
   }
 

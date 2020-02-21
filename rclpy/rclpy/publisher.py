@@ -31,6 +31,7 @@ class Publisher:
         msg_type: MsgType,
         topic: str,
         qos_profile: QoSProfile,
+        raw: bool,
         event_callbacks: PublisherEventCallbacks,
         callback_group: CallbackGroup,
     ) -> None:
@@ -53,6 +54,7 @@ class Publisher:
         self.topic = topic
         self.qos_profile = qos_profile
         self._use_proto_ = False
+        self.raw = raw
         if hasattr(self.msg_type, '_use_proto_'):
             self._use_proto_ = True
 
@@ -70,6 +72,10 @@ class Publisher:
         if not isinstance(msg, self.msg_type):
             raise TypeError()
         with self.handle as capsule:
+            if self.raw:
+                assert isinstance(msg, bytes)
+                _rclpy.rclpy_publish_serialized(capsule, msg)
+                return
             if self._use_proto_:
                 raw = msg.SerializeToString()
                 _rclpy.rclpy_publish_serialized(capsule, raw)

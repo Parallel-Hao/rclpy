@@ -1068,6 +1068,7 @@ class Node:
         msg_type,
         topic: str,
         qos_profile: Union[QoSProfile, int],
+        raw = False,
         *,
         callback_group: Optional[CallbackGroup] = None,
         event_callbacks: Optional[PublisherEventCallbacks] = None,
@@ -1096,7 +1097,7 @@ class Node:
         try:
             with self.handle as node_capsule:
                 publisher_capsule = _rclpy.rclpy_create_publisher(
-                    node_capsule, msg_type, topic, qos_profile.get_c_qos_profile())
+                    node_capsule, msg_type, topic, qos_profile.get_c_qos_profile(), raw)
         except ValueError:
             failed = True
         if failed:
@@ -1106,7 +1107,7 @@ class Node:
         publisher_handle.requires(self.handle)
 
         publisher = Publisher(
-            publisher_handle, msg_type, topic, qos_profile,
+            publisher_handle, msg_type, topic, qos_profile, raw,
             event_callbacks=event_callbacks or PublisherEventCallbacks(),
             callback_group=callback_group)
         self.__publishers.append(publisher)
