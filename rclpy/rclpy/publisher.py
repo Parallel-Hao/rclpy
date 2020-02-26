@@ -69,8 +69,9 @@ class Publisher:
         :raises: TypeError if the type of the passed message isn't an instance
           of the provided type when the publisher was constructed.
         """
-        if not isinstance(msg, self.msg_type):
-            raise TypeError()
+        if not self.raw:
+            if not isinstance(msg, self.msg_type):
+                raise TypeError()
         with self.handle as capsule:
             if self.raw:
                 assert isinstance(msg, bytes)
